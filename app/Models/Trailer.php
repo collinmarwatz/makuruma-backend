@@ -7,19 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Driver extends Model
+class Trailer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['full_name', 'phone'];
-
-    public function trucks(): HasMany
-{
-    return $this->hasMany(Truck::class);
-}
+    protected $fillable = ['reg_no'];
 
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    public function trucks(): HasMany
+    {
+        return $this->hasMany(Truck::class);
     }
 }

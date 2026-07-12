@@ -13,6 +13,19 @@ use App\Http\Controllers\Api\StaffController;
 use App\Http\Controllers\Api\StaffDocumentController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\DriverDocumentController;
+
+use App\Http\Controllers\Api\TrailerController;
+use App\Http\Controllers\Api\TrailerDocumentController;
+
+use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\VendorController;
+
+Route::apiResource('clients', ClientController::class);
+Route::apiResource('vendors', VendorController::class);
+
+Route::apiResource('trailers', TrailerController::class);
+Route::get('trailers/{trailer}/documents', [TrailerDocumentController::class, 'index']);
+Route::post('trailers/{trailer}/documents', [TrailerDocumentController::class, 'store']);
 // Public routes — no login required
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
