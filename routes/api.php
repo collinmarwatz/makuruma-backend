@@ -20,6 +20,18 @@ use App\Http\Controllers\Api\TrailerDocumentController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\VendorController;
 
+use App\Http\Controllers\Api\TripController;
+use App\Http\Controllers\Api\TripLegController;
+use App\Http\Controllers\Api\ConvoyController;
+
+Route::post('trips/find-by-number', [TripLegController::class, 'findByTripNumber']);
+Route::get('trips/{trip}/download', [TripController::class, 'download']);
+Route::apiResource('trips', TripController::class)->only(['index', 'store', 'show', 'destroy']);
+Route::post('trips/{trip}/legs', [TripLegController::class, 'store']);
+Route::put('trip-legs/{leg}', [TripLegController::class, 'update']);
+
+Route::apiResource('convoys', ConvoyController::class)->only(['index', 'store']);
+
 Route::apiResource('clients', ClientController::class);
 Route::apiResource('vendors', VendorController::class);
 
