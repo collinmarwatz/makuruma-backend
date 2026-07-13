@@ -65,13 +65,19 @@ class TripController extends Controller
     }
 
     public function download(Trip $trip)
-    {
-        $trip->load($this->eagerLoad());
+{
+    $trip->load($this->eagerLoad());
 
-        $pdf = Pdf::loadView('bookings.order-pdf', ['trip' => $trip]);
+    $logoPath = public_path('images/logo.png');
+    $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
 
-        return $pdf->download("booking-{$trip->trip_number}.pdf");
-    }
+    $pdf = Pdf::loadView('bookings.order-pdf', [
+        'trip' => $trip,
+        'logoBase64' => $logoBase64,
+    ]);
+
+    return $pdf->download("booking-{$trip->trip_number}.pdf");
+}
 
     public function truckAndLegRules(): array
     {

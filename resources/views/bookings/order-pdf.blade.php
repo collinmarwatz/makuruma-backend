@@ -5,9 +5,8 @@
     <style>
         body { font-family: 'Helvetica', sans-serif; color: #1f2937; font-size: 10px; }
         .header { display: table; width: 100%; margin-bottom: 6px; }
-        .logo-box { display: table-cell; width: 70px; vertical-align: middle; }
-        .logo-badge { background: #1e3a8a; color: #fff; font-weight: bold; font-size: 9px; padding: 6px 8px; border-radius: 4px; text-align: center; line-height: 1.3; }
-        .logo-badge span { color: #f97316; }
+        .logo-box { display: table-cell; width: 90px; vertical-align: middle; }
+        .logo-img { height: 50px; }
         .company-info { display: table-cell; vertical-align: middle; padding-left: 10px; }
         .company-name { font-size: 18px; font-weight: bold; color: #111827; }
         .company-address { font-size: 10px; color: #374151; }
@@ -21,12 +20,14 @@
 </head>
 <body>
     <div class="header">
-        <div class="logo-box"><div class="logo-badge">MAKURUMA<br><span>LOGISTICS</span> LTD</div></div>
-        <div class="company-info">
-            <div class="company-name">MAKURUMA LOGISTICS LIMITED</div>
-            <div class="company-address">P.O.Box 31902 Dar es salaam-Tanzania, Tel:+255 710 001100, +255 713 013132.</div>
-        </div>
+    <div class="logo-box">
+        <img src="{{ $logoBase64 }}" class="logo-img" alt="Makuruma Logistics">
     </div>
+    <div class="company-info">
+        <div class="company-name">MAKURUMA LOGISTICS LIMITED</div>
+        <div class="company-address">P.O.Box 31902 Dar es salaam-Tanzania, Tel:+255 710 001100, +255 713 013132.</div>
+    </div>
+</div>
 
     <div style="text-align:center; font-size:13px; font-weight:bold;">Booking {{ $trip->trip_number }}</div>
 
