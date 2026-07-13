@@ -24,6 +24,16 @@ use App\Http\Controllers\Api\TripController;
 use App\Http\Controllers\Api\TripLegController;
 use App\Http\Controllers\Api\ConvoyController;
 
+use App\Http\Controllers\Api\CheckpointController;
+use App\Http\Controllers\Api\TrackingController;
+
+Route::apiResource('checkpoints', CheckpointController::class)->only(['index', 'store']);
+Route::get('tracking', [TrackingController::class, 'index']);
+Route::get('tracking/{bookingTruck}', [TrackingController::class, 'show']);
+Route::put('tracking/{bookingTruck}/status', [TrackingController::class, 'updateStatus']);
+Route::post('tracking/{bookingTruck}/milestones', [TrackingController::class, 'upsertMilestone']);
+Route::get('tracking/{bookingTruck}/download', [TrackingController::class, 'download']);
+
 Route::post('trips/find-by-number', [TripLegController::class, 'findByTripNumber']);
 Route::get('trips/{trip}/download', [TripController::class, 'download']);
 Route::apiResource('trips', TripController::class)->only(['index', 'store', 'show', 'destroy']);
