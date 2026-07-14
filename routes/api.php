@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\TrackingController;
 use App\Http\Controllers\Api\ExpenseOrderController;
 use App\Http\Controllers\Api\InvoiceController;
 
+use App\Http\Controllers\Api\DashboardController;
 
 
 // Public routes — no login required
@@ -44,6 +45,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('roles', [RoleController::class, 'index']);
     Route::apiResource('users', UserController::class);
+
+    Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 
     Route::apiResource('trucks', TruckController::class);
     Route::get('trucks/{truck}/documents', [TruckDocumentController::class, 'index']);
