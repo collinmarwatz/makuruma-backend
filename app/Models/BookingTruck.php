@@ -12,11 +12,21 @@ class BookingTruck extends Model
     use HasFactory;
 
 protected $fillable = [
-    'trip_id', 'truck_id', 'trailer_id', 'driver_id', 'capacity_override',
+    'trip_leg_id', 'truck_id', 'trailer_id', 'driver_id', 'capacity_override',
     'cargo', 'loading_point', 'loading_point_arrival_date',
     'offloading_point', 'offloading_date',
     'invoiced_transit_weight', 'invoiced_detention_charge',
+    'rate', 'quantity', 'amount',
 ];
+
+protected static function booted(): void
+{
+    static::saving(function (BookingTruck $bookingTruck) {
+        if ($bookingTruck->rate !== null && $bookingTruck->quantity !== null) {
+            $bookingTruck->amount = round($bookingTruck->rate * $bookingTruck->quantity, 2);
+        }
+    });
+}
     public function tripLeg(): BelongsTo
 {
     return $this->belongsTo(TripLeg::class);
@@ -26,7 +36,10 @@ public function milestones(): HasMany
 {
     return $this->hasMany(TruckMilestone::class);
 }
-
+public function invoiceLine()
+{
+    return $this->hasOne(InvoiceLine::class);
+}
 
     public function truck(): BelongsTo
     {

@@ -12,9 +12,9 @@ class TripLeg extends Model
     use HasFactory;
 
     protected $fillable = [
-        'trip_id', 'direction', 'client_id', 'rate', 'eta',
-        'location', 'item_sn', 'description', 'quantity', 'amount',
-    ];
+    'trip_id', 'direction', 'client_id', 'eta',
+    'location', 'item_sn', 'description',
+];
 
     public function trip(): BelongsTo
     {
@@ -30,4 +30,9 @@ class TripLeg extends Model
     {
         return $this->hasMany(BookingTruck::class);
     }
+
+    public function invoiceLines()
+{
+    return $this->hasMany(InvoiceLine::class);
+}
 }

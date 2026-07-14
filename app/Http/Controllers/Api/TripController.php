@@ -33,16 +33,13 @@ class TripController extends Controller
             $trip = Trip::create(['trip_number' => $bookingNumber]);
 
             $leg = $trip->legs()->create([
-                'direction' => 'go',
-                'client_id' => $validated['client_id'] ?? null,
-                'rate' => $validated['rate'] ?? null,
-                'eta' => $validated['eta'] ?? null,
-                'location' => $validated['location'] ?? null,
-                'item_sn' => $validated['item_sn'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'quantity' => $validated['quantity'] ?? null,
-                'amount' => $validated['amount'] ?? null,
-            ]);
+    'direction' => 'go',
+    'client_id' => $validated['client_id'] ?? null,
+    'eta' => $validated['eta'] ?? null,
+    'location' => $validated['location'] ?? null,
+    'item_sn' => $validated['item_sn'] ?? null,
+    'description' => $validated['description'] ?? null,
+]);
 
             $this->attachTrucks($leg, $validated['trucks']);
 
@@ -80,50 +77,51 @@ class TripController extends Controller
 }
 
     public function truckAndLegRules(): array
-    {
-        return [
-            'trucks' => 'required|array|min:1',
-            'trucks.*.truck_id' => 'required|exists:trucks,id',
-            'trucks.*.trailer_id' => 'nullable|exists:trailers,id',
-            'trucks.*.driver_id' => 'nullable|exists:drivers,id',
-            'trucks.*.capacity_override' => 'nullable|numeric',
-            'trucks.*.cargo' => 'nullable|string',
-            'trucks.*.loading_point' => 'nullable|string',
-            'trucks.*.loading_point_arrival_date' => 'nullable|date',
-            'trucks.*.offloading_point' => 'nullable|string',
-            'trucks.*.offloading_date' => 'nullable|date',
-            'trucks.*.invoiced_transit_weight' => 'nullable|numeric',
-            'trucks.*.invoiced_detention_charge' => 'nullable|numeric',
+{
+    return [
+        'trucks' => 'required|array|min:1',
+        'trucks.*.truck_id' => 'required|exists:trucks,id',
+        'trucks.*.trailer_id' => 'nullable|exists:trailers,id',
+        'trucks.*.driver_id' => 'nullable|exists:drivers,id',
+        'trucks.*.capacity_override' => 'nullable|numeric',
+        'trucks.*.cargo' => 'nullable|string',
+        'trucks.*.loading_point' => 'nullable|string',
+        'trucks.*.loading_point_arrival_date' => 'nullable|date',
+        'trucks.*.offloading_point' => 'nullable|string',
+        'trucks.*.offloading_date' => 'nullable|date',
+        'trucks.*.invoiced_transit_weight' => 'nullable|numeric',
+        'trucks.*.invoiced_detention_charge' => 'nullable|numeric',
+        'trucks.*.rate' => 'nullable|numeric',
+        'trucks.*.quantity' => 'nullable|numeric',
 
-            'client_id' => 'nullable|exists:clients,id',
-            'rate' => 'nullable|numeric',
-            'eta' => 'nullable|date',
-            'location' => 'nullable|string',
-            'item_sn' => 'nullable|string',
-            'description' => 'nullable|string',
-            'quantity' => 'nullable|numeric',
-            'amount' => 'nullable|numeric',
-        ];
-    }
+        'client_id' => 'nullable|exists:clients,id',
+        'eta' => 'nullable|date',
+        'location' => 'nullable|string',
+        'item_sn' => 'nullable|string',
+        'description' => 'nullable|string',
+    ];
+}
 
     public function attachTrucks($leg, array $trucks): void
-    {
-        foreach ($trucks as $truckData) {
-            $truck = Truck::find($truckData['truck_id']);
+{
+    foreach ($trucks as $truckData) {
+        $truck = Truck::find($truckData['truck_id']);
 
-            $leg->bookingTrucks()->create([
-                'truck_id' => $truck->id,
-                'trailer_id' => $truckData['trailer_id'] ?? $truck->trailer_id,
-                'driver_id' => $truckData['driver_id'] ?? $truck->driver_id,
-                'capacity_override' => $truckData['capacity_override'] ?? null,
-                'cargo' => $truckData['cargo'] ?? null,
-                'loading_point' => $truckData['loading_point'] ?? null,
-                'loading_point_arrival_date' => $truckData['loading_point_arrival_date'] ?? null,
-                'offloading_point' => $truckData['offloading_point'] ?? null,
-                'offloading_date' => $truckData['offloading_date'] ?? null,
-                'invoiced_transit_weight' => $truckData['invoiced_transit_weight'] ?? null,
-                'invoiced_detention_charge' => $truckData['invoiced_detention_charge'] ?? null,
-            ]);
-        }
+        $leg->bookingTrucks()->create([
+            'truck_id' => $truck->id,
+            'trailer_id' => $truckData['trailer_id'] ?? $truck->trailer_id,
+            'driver_id' => $truckData['driver_id'] ?? $truck->driver_id,
+            'capacity_override' => $truckData['capacity_override'] ?? null,
+            'cargo' => $truckData['cargo'] ?? null,
+            'loading_point' => $truckData['loading_point'] ?? null,
+            'loading_point_arrival_date' => $truckData['loading_point_arrival_date'] ?? null,
+            'offloading_point' => $truckData['offloading_point'] ?? null,
+            'offloading_date' => $truckData['offloading_date'] ?? null,
+            'invoiced_transit_weight' => $truckData['invoiced_transit_weight'] ?? null,
+            'invoiced_detention_charge' => $truckData['invoiced_detention_charge'] ?? null,
+            'rate' => $truckData['rate'] ?? null,
+            'quantity' => $truckData['quantity'] ?? null,
+        ]);
     }
+}
 }

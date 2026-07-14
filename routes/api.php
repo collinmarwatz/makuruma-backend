@@ -29,6 +29,9 @@ use App\Http\Controllers\Api\CheckpointController;
 use App\Http\Controllers\Api\TrackingController;
 
 use App\Http\Controllers\Api\ExpenseOrderController;
+use App\Http\Controllers\Api\InvoiceController;
+
+
 
 // Public routes — no login required
 Route::post('register', [AuthController::class, 'register']);
@@ -82,4 +85,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);
     Route::post('expense-orders/{expenseOrder}/mark-paid', [ExpenseOrderController::class, 'markPaid']);
     Route::get('expense-orders/{expenseOrder}/download', [ExpenseOrderController::class, 'download']);
+
+    Route::get('invoices/invoiceable-legs', [InvoiceController::class, 'invoiceableLegs']);
+    Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download']);
+    Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show', 'destroy']);
 });

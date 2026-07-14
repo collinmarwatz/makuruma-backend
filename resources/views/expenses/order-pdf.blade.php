@@ -82,7 +82,7 @@
         <thead>
             <tr>
                 <th>Description</th>
-                <th style="text-align:right;">Amount (TZS)</th>
+                <th style="text-align:right;">Amount ($)</th>
             </tr>
         </thead>
         <tbody>

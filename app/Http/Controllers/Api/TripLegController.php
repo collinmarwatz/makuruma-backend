@@ -20,16 +20,13 @@ class TripLegController extends Controller
 
         $leg = DB::transaction(function () use ($trip, $validated, $controller) {
             $leg = $trip->legs()->create([
-                'direction' => $validated['direction'],
-                'client_id' => $validated['client_id'] ?? null,
-                'rate' => $validated['rate'] ?? null,
-                'eta' => $validated['eta'] ?? null,
-                'location' => $validated['location'] ?? null,
-                'item_sn' => $validated['item_sn'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'quantity' => $validated['quantity'] ?? null,
-                'amount' => $validated['amount'] ?? null,
-            ]);
+    'direction' => $validated['direction'],
+    'client_id' => $validated['client_id'] ?? null,
+    'eta' => $validated['eta'] ?? null,
+    'location' => $validated['location'] ?? null,
+    'item_sn' => $validated['item_sn'] ?? null,
+    'description' => $validated['description'] ?? null,
+]);
 
             $controller->attachTrucks($leg, $validated['trucks']);
 
