@@ -11,20 +11,32 @@ class Truck extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['reg_no', 'capacity', 'status', 'trailer_id', 'driver_id'];
+    protected $fillable = ['reg_no', 'capacity', 'status', 'trailer_id', 'driver_id', 'current_location', 'current_status'];
 
-    public function documents(): MorphMany
-    {
-        return $this->morphMany(Document::class, 'documentable');
-    }
+public function documents()
+{
+    return $this->morphMany(Document::class, 'documentable');
+}
 
-    public function trailer(): BelongsTo
-    {
-        return $this->belongsTo(Trailer::class);
-    }
+public function trailer()
+{
+    return $this->belongsTo(Trailer::class);
+}
 
-    public function driver(): BelongsTo
-    {
-        return $this->belongsTo(Driver::class);
-    }
+public function driver()
+{
+    return $this->belongsTo(Driver::class);
+}
+
+public function milestones()
+{
+    return $this->hasMany(TruckMilestone::class);
+}
+
+public function bookingTrucks()
+{
+    return $this->hasMany(BookingTruck::class);
+}
+
+         
 }

@@ -3,61 +3,43 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\BookingTruck;
+use App\Models\Truck;
 use App\Models\TruckMilestone;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-
 class TrackingController extends Controller
 {
+    protected function eagerLoad()
+    {
+        return ['trailer', 'driver', 'milestones.checkpoint', 'bookingTrucks' => function ($query) {
+            $query->latest()->limit(1)->with('tripLeg.trip');
+        }];
+    }
+
     public function index()
     {
-        return BookingTruck::with([
-            'truck', 'trailer', 'driver',
-            'tripLeg.trip',
-            'milestones.checkpoint',
-        ])->latest()->get();
+        return Truck::with($this->eagerLoad())->get();
     }
 
-    public function download(BookingTruck $bookingTruck)
-{
-    $bookingTruck->load(['truck', 'trailer', 'driver', 'tripLeg.trip', 'milestones.checkpoint']);
-
-    $sortedMilestones = $bookingTruck->milestones->sortBy('checkpoint.sequence_order');
-
-    $logoPath = public_path('images/logo.png');
-    $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
-
-    $pdf = Pdf::loadView('tracking.report-pdf', [
-        'bookingTruck' => $bookingTruck,
-        'milestones' => $sortedMilestones,
-        'logoBase64' => $logoBase64,
-    ]);
-
-    $filename = "tracking-{$bookingTruck->truck->reg_no}-{$bookingTruck->tripLeg->trip->trip_number}.pdf";
-
-    return $pdf->download($filename);
-}
-
-    public function show(BookingTruck $bookingTruck)
+    public function show(Truck $truck)
     {
-        return $bookingTruck->load(['truck', 'trailer', 'driver', 'tripLeg.trip', 'milestones.checkpoint']);
+        return $truck->load($this->eagerLoad());
     }
 
-    public function updateStatus(Request $request, BookingTruck $bookingTruck)
+    public function updateStatus(Request $request, Truck $truck)
     {
         $validated = $request->validate([
             'current_location' => 'nullable|string',
             'current_status' => 'required|in:loading,in_transit,at_border,offloading,delayed,completed',
         ]);
 
-        $bookingTruck->update($validated);
+        $truck->update($validated);
 
-        return $bookingTruck->load(['truck', 'trailer', 'driver', 'tripLeg.trip', 'milestones.checkpoint']);
+        return $truck->load($this->eagerLoad());
     }
 
-    public function upsertMilestone(Request $request, BookingTruck $bookingTruck)
+    public function upsertMilestone(Request $request, Truck $truck)
     {
         $validated = $request->validate([
             'checkpoint_id' => 'required|exists:checkpoints,id',
@@ -67,7 +49,7 @@ class TrackingController extends Controller
 
         $milestone = TruckMilestone::updateOrCreate(
             [
-                'booking_truck_id' => $bookingTruck->id,
+                'truck_id' => $truck->id,
                 'checkpoint_id' => $validated['checkpoint_id'],
             ],
             [
@@ -77,5 +59,23 @@ class TrackingController extends Controller
         );
 
         return response()->json($milestone->load('checkpoint'), 200);
+    }
+
+    public function download(Truck $truck)
+    {
+        $truck->load($this->eagerLoad());
+
+        $sortedMilestones = $truck->milestones->sortBy('checkpoint.sequence_order');
+
+        $logoPath = public_path('images/logo.png');
+        $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+
+        $pdf = Pdf::loadView('tracking.report-pdf', [
+            'truck' => $truck,
+            'milestones' => $sortedMilestones,
+            'logoBase64' => $logoBase64,
+        ]);
+
+        return $pdf->download("tracking-{$truck->reg_no}.pdf");
     }
 }

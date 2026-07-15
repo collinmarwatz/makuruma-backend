@@ -78,11 +78,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('checkpoints', CheckpointController::class)->only(['index', 'store']);
     Route::get('tracking', [TrackingController::class, 'index']);
-    Route::get('tracking/{bookingTruck}', [TrackingController::class, 'show']);
-    Route::put('tracking/{bookingTruck}/status', [TrackingController::class, 'updateStatus']);
-    Route::post('tracking/{bookingTruck}/milestones', [TrackingController::class, 'upsertMilestone']);
-    Route::get('tracking/{bookingTruck}/download', [TrackingController::class, 'download']);
-
+    Route::get('tracking/{truck}', [TrackingController::class, 'show']);
+    Route::put('tracking/{truck}/status', [TrackingController::class, 'updateStatus']);
+    Route::post('tracking/{truck}/milestones', [TrackingController::class, 'upsertMilestone']); 
+    Route::get('tracking/{truck}/download', [TrackingController::class, 'download']);
+    
     Route::apiResource('expense-orders', ExpenseOrderController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('expense-orders/{expenseOrder}/approve', [ExpenseOrderController::class, 'approve']);
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);

@@ -35,31 +35,45 @@
 
     <div class="info-grid">
         <div class="info-cell">
-            <div class="info-label">Booking Number</div>
-            <div class="info-value">{{ $bookingTruck->tripLeg->trip->trip_number }} ({{ strtoupper($bookingTruck->tripLeg->direction) }})</div>
+            <div class="info-label">Truck</div>
+            <div class="info-value">{{ $truck->reg_no }}</div>
         </div>
         <div class="info-cell">
-            <div class="info-label">Truck / Trailer</div>
-            <div class="info-value">{{ $bookingTruck->truck->reg_no }} / {{ $bookingTruck->trailer->reg_no ?? '—' }}</div>
+            <div class="info-label">Trailer / Driver</div>
+            <div class="info-value">{{ $truck->trailer->reg_no ?? '—' }} / {{ $truck->driver->full_name ?? '—' }}</div>
         </div>
         <div class="info-cell">
-            <div class="info-label">Driver</div>
-            <div class="info-value">{{ $bookingTruck->driver->full_name ?? '—' }}</div>
+            <div class="info-label">Truck Status</div>
+<div class="info-value">{{ ucfirst($truck->status) }}</div>
         </div>
     </div>
+
+    @php $recentBooking = $truck->bookingTrucks->first(); @endphp
     <div class="info-grid">
         <div class="info-cell">
+            <div class="info-label">Last Booking</div>
+            <div class="info-value">{{ $recentBooking->tripLeg->trip->trip_number ?? '—' }}</div>
+        </div>
+        <div class="info-cell">
             <div class="info-label">Loading Point</div>
-            <div class="info-value">{{ $bookingTruck->loading_point ?? '—' }}</div>
+            <div class="info-value">{{ $recentBooking->loading_point ?? '—' }}</div>
         </div>
         <div class="info-cell">
             <div class="info-label">Offloading Point</div>
-            <div class="info-value">{{ $bookingTruck->offloading_point ?? '—' }}</div>
+            <div class="info-value">{{ $recentBooking->offloading_point ?? '—' }}</div>
         </div>
+    </div>
+
+    <div class="info-grid">
         <div class="info-cell">
             <div class="info-label">Current Status</div>
-            <div class="info-value"><span class="status-badge">{{ strtoupper(str_replace('_', ' ', $bookingTruck->current_status)) }}</span> @ {{ $bookingTruck->current_location ?? '—' }}</div>
+            <div class="info-value"><span class="status-badge">{{ strtoupper(str_replace('_', ' ', $truck->current_status)) }}</span></div>
         </div>
+        <div class="info-cell">
+            <div class="info-label">Current Location</div>
+            <div class="info-value">{{ $truck->current_location ?? '—' }}</div>
+        </div>
+        <div class="info-cell"></div>
     </div>
 
     <div class="section-title">CHECKPOINT MILESTONES</div>
