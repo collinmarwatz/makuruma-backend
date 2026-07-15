@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\ExpenseOrderController;
 use App\Http\Controllers\Api\InvoiceController;
 
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\BookingTruckDocumentController;
 
 
 // Public routes — no login required
@@ -77,12 +78,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('convoys', ConvoyController::class)->only(['index', 'store']);
 
     Route::apiResource('checkpoints', CheckpointController::class)->only(['index', 'store']);
+
     Route::get('tracking', [TrackingController::class, 'index']);
     Route::get('tracking/{truck}', [TrackingController::class, 'show']);
     Route::put('tracking/{truck}/status', [TrackingController::class, 'updateStatus']);
-    Route::post('tracking/{truck}/milestones', [TrackingController::class, 'upsertMilestone']); 
+    Route::post('tracking/{truck}/milestones', [TrackingController::class, 'upsertMilestone']);
     Route::get('tracking/{truck}/download', [TrackingController::class, 'download']);
-    
+    Route::put('booking-trucks/{bookingTruck}/dates', [TrackingController::class, 'updateTripDates']);
+    Route::get('booking-trucks/{bookingTruck}/documents', [BookingTruckDocumentController::class, 'index']);
+    Route::post('booking-trucks/{bookingTruck}/documents', [BookingTruckDocumentController::class, 'store']);
+
     Route::apiResource('expense-orders', ExpenseOrderController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('expense-orders/{expenseOrder}/approve', [ExpenseOrderController::class, 'approve']);
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);

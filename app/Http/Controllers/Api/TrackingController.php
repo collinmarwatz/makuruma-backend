@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BookingTruck;
 use App\Models\Truck;
 use App\Models\TruckMilestone;
 use Illuminate\Http\Request;
@@ -12,9 +13,14 @@ class TrackingController extends Controller
 {
     protected function eagerLoad()
     {
-        return ['trailer', 'driver', 'milestones.checkpoint', 'bookingTrucks' => function ($query) {
-            $query->latest()->limit(1)->with('tripLeg.trip');
-        }];
+        return [
+            'trailer',
+            'driver',
+            'milestones.checkpoint',
+            'bookingTrucks' => function ($query) {
+                $query->latest()->limit(1)->with(['tripLeg.trip', 'tripLeg.client', 'documents']);
+            }
+        ];
     }
 
     public function index()
@@ -31,7 +37,7 @@ class TrackingController extends Controller
     {
         $validated = $request->validate([
             'current_location' => 'nullable|string',
-            'current_status' => 'required|in:loading,in_transit,at_border,offloading,delayed,completed',
+            'current_status' => 'required|in:loading,in_transit,at_border,offloading,delayed,breakdown,completed',
         ]);
 
         $truck->update($validated);
@@ -59,6 +65,18 @@ class TrackingController extends Controller
         );
 
         return response()->json($milestone->load('checkpoint'), 200);
+    }
+
+    public function updateTripDates(Request $request, BookingTruck $bookingTruck)
+    {
+        $validated = $request->validate([
+            'actual_loading_date' => 'nullable|date',
+            'actual_offloading_date' => 'nullable|date',
+        ]);
+
+        $bookingTruck->update($validated);
+
+        return $bookingTruck;
     }
 
     public function download(Truck $truck)
