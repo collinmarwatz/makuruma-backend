@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('booking-trucks/{bookingTruck}/documents', [BookingTruckDocumentController::class, 'index']);
     Route::post('booking-trucks/{bookingTruck}/documents', [BookingTruckDocumentController::class, 'store']);
 
+    Route::get('expense-orders/{expenseOrder}/download-excel', [ExpenseOrderController::class, 'downloadExcel']);
     Route::apiResource('expense-orders', ExpenseOrderController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('expense-orders/{expenseOrder}/approve', [ExpenseOrderController::class, 'approve']);
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);

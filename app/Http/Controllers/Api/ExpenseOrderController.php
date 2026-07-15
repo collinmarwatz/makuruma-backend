@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\ExpenseOrder;
 use App\Models\Trip;
 use App\Services\ExpenseNumberGenerator;
+use App\Exports\ExpenseOrderExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ExpenseOrderController extends Controller
 {
@@ -198,6 +200,13 @@ class ExpenseOrderController extends Controller
         ]);
 
         return $pdf->download("expense-{$expenseOrder->order_number}.pdf");
+    }
+
+    public function downloadExcel(ExpenseOrder $expenseOrder)
+    {
+        $expenseOrder->load($this->eagerLoad());
+
+        return Excel::download(new ExpenseOrderExport($expenseOrder), "expense-{$expenseOrder->order_number}.xlsx");
     }
 
     protected function authorizeRole(Request $request, array $allowedSlugs): void
