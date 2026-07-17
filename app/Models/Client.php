@@ -9,5 +9,10 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['company_name', 'email', 'phone'];
+    protected $fillable = ['company_name', 'short_code', 'allows_advance_invoice', 'email', 'phone'];
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
 }

@@ -7,32 +7,34 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class TripLeg extends Model
+class Booking extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-    'trip_id', 'direction', 'client_id', 'eta',
-    'location', 'item_sn', 'description',
-];
-
-    public function trip(): BelongsTo
-    {
-        return $this->belongsTo(Trip::class);
-    }
+        'booking_number',
+        'direction',
+        'client_id',
+        'eta',
+        'location',
+        'loading_point',
+        'offloading_point',
+        'description',
+        'created_by',
+    ];
 
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }
 
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function bookingTrucks(): HasMany
     {
         return $this->hasMany(BookingTruck::class);
     }
-
-    public function invoiceLines()
-{
-    return $this->hasMany(InvoiceLine::class);
-}
 }

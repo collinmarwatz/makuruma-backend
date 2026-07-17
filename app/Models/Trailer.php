@@ -11,7 +11,7 @@ class Trailer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['reg_no'];
+    protected $fillable = ['reg_no', 'buying_price'];
 
     public function documents(): MorphMany
     {

@@ -17,6 +17,7 @@ class ClientController extends Controller
     {
         $validated = $request->validate([
             'company_name' => 'required|string',
+            'short_code' => 'nullable|string|max:5|unique:clients,short_code',
             'email' => 'nullable|email',
             'phone' => 'nullable|string',
         ]);
@@ -35,6 +36,7 @@ class ClientController extends Controller
     {
         $validated = $request->validate([
             'company_name' => 'sometimes|required|string',
+            'short_code' => 'nullable|string|max:5|unique:clients,short_code,' . $client->id,
             'email' => 'nullable|email',
             'phone' => 'nullable|string',
         ]);

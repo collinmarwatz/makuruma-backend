@@ -11,7 +11,31 @@ class Invoice extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['invoice_number', 'client_id', 'invoice_date', 'mode_of_payment', 'total_amount', 'created_by'];
+    protected $fillable = [
+        'invoice_number',
+        'invoice_type',
+        'booking_id',
+        'client_id',
+        'invoice_date',
+        'mode_of_payment',
+        'delivery_note_no',
+        'delivery_note_date',
+        'supplier_ref',
+        'other_ref',
+        'loading_con_no',
+        'settlement_no',
+        'dispatched_through',
+        'destination',
+        'terms_of_delivery',
+        'proof_of_delivery_path',
+        'total_amount',
+        'created_by',
+    ];
+
+    public function booking(): BelongsTo
+    {
+        return $this->belongsTo(Booking::class);
+    }
 
     public function client(): BelongsTo
     {

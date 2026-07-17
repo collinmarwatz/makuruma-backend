@@ -19,6 +19,7 @@ class VendorController extends Controller
             'company_name' => 'required|string',
             'vendor_type' => 'required|in:fuel,e-seal',
             'phone' => 'nullable|string',
+            'location' => 'nullable|string',
         ]);
 
         $vendor = Vendor::create($validated);
@@ -37,6 +38,7 @@ class VendorController extends Controller
             'company_name' => 'sometimes|required|string',
             'vendor_type' => 'sometimes|required|in:fuel,e-seal',
             'phone' => 'nullable|string',
+            'location' => 'nullable|string',
         ]);
 
         $vendor->update($validated);

@@ -18,22 +18,19 @@ use App\Http\Controllers\Api\DriverDocumentController;
 use App\Http\Controllers\Api\TrailerController;
 use App\Http\Controllers\Api\TrailerDocumentController;
 
+use App\Http\Controllers\Api\OfficeAssetController;
+
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\VendorController;
 
-use App\Http\Controllers\Api\TripController;
-use App\Http\Controllers\Api\TripLegController;
-use App\Http\Controllers\Api\ConvoyController;
+use App\Http\Controllers\Api\BookingController;
 
 use App\Http\Controllers\Api\CheckpointController;
 use App\Http\Controllers\Api\TrackingController;
 
 use App\Http\Controllers\Api\ExpenseOrderController;
-use App\Http\Controllers\Api\InvoiceController;
 
 use App\Http\Controllers\Api\DashboardController;
-use App\Http\Controllers\Api\BookingTruckDocumentController;
-
 
 // Public routes — no login required
 Route::post('register', [AuthController::class, 'register']);
@@ -46,8 +43,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('roles', [RoleController::class, 'index']);
     Route::apiResource('users', UserController::class);
-
-    Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 
     Route::apiResource('trucks', TruckController::class);
     Route::get('trucks/{truck}/documents', [TruckDocumentController::class, 'index']);
@@ -66,36 +61,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('trailers/{trailer}/documents', [TrailerDocumentController::class, 'index']);
     Route::post('trailers/{trailer}/documents', [TrailerDocumentController::class, 'store']);
 
+    Route::apiResource('office-assets', OfficeAssetController::class);
+
     Route::apiResource('clients', ClientController::class);
     Route::apiResource('vendors', VendorController::class);
 
-    Route::post('trips/find-by-number', [TripLegController::class, 'findByTripNumber']);
-    Route::get('trips/{trip}/download', [TripController::class, 'download']);
-    Route::apiResource('trips', TripController::class)->only(['index', 'store', 'show', 'destroy']);
-    Route::post('trips/{trip}/legs', [TripLegController::class, 'store']);
-    Route::put('trip-legs/{leg}', [TripLegController::class, 'update']);
-
-    Route::apiResource('convoys', ConvoyController::class)->only(['index', 'store']);
+    Route::get('bookings/eligible-trucks', [BookingController::class, 'eligibleTrucks']);
+    Route::apiResource('bookings', BookingController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 
     Route::apiResource('checkpoints', CheckpointController::class)->only(['index', 'store']);
-
     Route::get('tracking', [TrackingController::class, 'index']);
     Route::get('tracking/{truck}', [TrackingController::class, 'show']);
     Route::put('tracking/{truck}/status', [TrackingController::class, 'updateStatus']);
     Route::post('tracking/{truck}/milestones', [TrackingController::class, 'upsertMilestone']);
     Route::get('tracking/{truck}/download', [TrackingController::class, 'download']);
     Route::put('booking-trucks/{bookingTruck}/dates', [TrackingController::class, 'updateTripDates']);
-    Route::get('booking-trucks/{bookingTruck}/documents', [BookingTruckDocumentController::class, 'index']);
-    Route::post('booking-trucks/{bookingTruck}/documents', [BookingTruckDocumentController::class, 'store']);
+    Route::get('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'index']);
+    Route::post('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'store']);
 
+    Route::get('expense-orders/{expenseOrder}/download', [ExpenseOrderController::class, 'download']);
     Route::get('expense-orders/{expenseOrder}/download-excel', [ExpenseOrderController::class, 'downloadExcel']);
     Route::apiResource('expense-orders', ExpenseOrderController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('expense-orders/{expenseOrder}/approve', [ExpenseOrderController::class, 'approve']);
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);
     Route::post('expense-orders/{expenseOrder}/mark-paid', [ExpenseOrderController::class, 'markPaid']);
-    Route::get('expense-orders/{expenseOrder}/download', [ExpenseOrderController::class, 'download']);
 
-    Route::get('invoices/invoiceable-legs', [InvoiceController::class, 'invoiceableLegs']);
-    Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download']);
-    Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show', 'destroy']);
+    Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 });

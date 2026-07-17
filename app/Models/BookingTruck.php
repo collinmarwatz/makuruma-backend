@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class BookingTruck extends Model
@@ -12,35 +13,31 @@ class BookingTruck extends Model
     use HasFactory;
 
     protected $fillable = [
-        'trip_leg_id',
+        'booking_id',
+        'trip_id',
         'truck_id',
         'trailer_id',
         'driver_id',
-        'capacity_override',
+        'capacity',
         'cargo',
-        'invoiced_transit_weight',
-        'invoiced_detention_charge',
         'rate',
-        'quantity',
-        'amount',
-        'actual_loading_date',
-        'actual_offloading_date',
+        'loading_point_arrival_date',
+        'loading_date',
+        'loading_dispatch_date',
+        'offloading_point_arrival_date',
+        'offloading_date',
     ];
 
-    protected $appends = ['is_overdue', 'truck_trip_code'];
+    protected $appends = ['is_overdue'];
 
-    protected static function booted(): void
+    public function booking(): BelongsTo
     {
-        static::saving(function (BookingTruck $bookingTruck) {
-            if ($bookingTruck->rate !== null && $bookingTruck->quantity !== null) {
-                $bookingTruck->amount = round($bookingTruck->rate * $bookingTruck->quantity, 2);
-            }
-        });
+        return $this->belongsTo(Booking::class);
     }
 
-    public function tripLeg(): BelongsTo
+    public function trip(): BelongsTo
     {
-        return $this->belongsTo(TripLeg::class);
+        return $this->belongsTo(Trip::class);
     }
 
     public function truck(): BelongsTo
@@ -63,23 +60,19 @@ class BookingTruck extends Model
         return $this->morphMany(Document::class, 'documentable');
     }
 
+    public function invoiceLines(): HasMany
+    {
+        return $this->hasMany(InvoiceLine::class);
+    }
+
     public function getIsOverdueAttribute(): bool
     {
-        if (!$this->tripLeg?->eta) {
+        if (!$this->booking?->eta) {
             return false;
         }
 
-        $truck = $this->truck;
-        $isFinished = $truck?->current_status === 'completed';
+        $isFinished = $this->truck?->current_status === 'completed';
 
-        return !$isFinished && now()->startOfDay()->greaterThan($this->tripLeg->eta);
-    }
-
-    public function getTruckTripCodeAttribute(): string
-    {
-        $tripNumber = $this->tripLeg?->trip?->trip_number ?? '';
-        $regNo = $this->truck?->reg_no ?? '';
-
-        return trim("{$tripNumber} {$regNo}");
+        return !$isFinished && now()->startOfDay()->greaterThan($this->booking->eta);
     }
 }

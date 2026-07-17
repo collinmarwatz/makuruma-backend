@@ -10,15 +10,15 @@ class InvoiceLine extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['invoice_id', 'booking_truck_id', 'description', 'quantity', 'rate', 'amount'];
+    protected $fillable = ['invoice_id', 'booking_truck_id', 'description', 'quantity', 'rate', 'days', 'amount'];
 
-public function bookingTruck(): BelongsTo
-{
-    return $this->belongsTo(BookingTruck::class);
-}
-
-    public function tripLeg(): BelongsTo
+    public function invoice(): BelongsTo
     {
-        return $this->belongsTo(TripLeg::class);
+        return $this->belongsTo(Invoice::class);
+    }
+
+    public function bookingTruck(): BelongsTo
+    {
+        return $this->belongsTo(BookingTruck::class);
     }
 }
