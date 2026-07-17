@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\BookingTruck;
 use App\Models\Truck;
 use App\Models\TruckMilestone;
+use App\Exports\TrackingExport;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Models\Checkpoint;
+
 
 class TrackingController extends Controller
 {
@@ -37,7 +41,7 @@ class TrackingController extends Controller
     {
         $validated = $request->validate([
             'current_location' => 'nullable|string',
-            'current_status' => 'required|in:pending,loading,in_transit,at_border,offloading,delayed,breakdown,completed',
+            'current_status' => 'required|in:pending,on_route_to_loading,loading,in_transit,at_border,offloading,delayed,breakdown,completed',
         ]);
 
         $truck->update($validated);
@@ -74,8 +78,11 @@ class TrackingController extends Controller
     public function updateTripDates(Request $request, BookingTruck $bookingTruck)
     {
         $validated = $request->validate([
-            'actual_loading_date' => 'nullable|date',
-            'actual_offloading_date' => 'nullable|date',
+            'loading_point_arrival_date' => 'nullable|date',
+            'loading_date' => 'nullable|date',
+            'loading_dispatch_date' => 'nullable|date',
+            'offloading_point_arrival_date' => 'nullable|date',
+            'offloading_date' => 'nullable|date',
         ]);
 
         $bookingTruck->update($validated);
@@ -99,5 +106,18 @@ class TrackingController extends Controller
         ]);
 
         return $pdf->download("tracking-{$truck->reg_no}.pdf");
+    }
+
+    public function downloadExcel(Request $request)
+    {
+        $checkpoints = Checkpoint::orderBy('sequence_order')->get();
+
+        $goTrucks = Truck::with($this->eagerLoad())->where('trip_status', 'go')->get();
+        $returnTrucks = Truck::with($this->eagerLoad())->where('trip_status', 'return')->get();
+
+        return Excel::download(
+            new TrackingExport($goTrucks, $returnTrucks, $checkpoints),
+            'tracking-report-' . now()->format('Y-m-d') . '.xlsx'
+        );
     }
 }

@@ -12,6 +12,8 @@ use App\Services\BookingNumberGenerator;
 use App\Services\TripCodeGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class BookingController extends Controller
 {
@@ -102,7 +104,7 @@ class BookingController extends Controller
                     ]);
 
                     $bookingTruck->update(['trip_id' => $trip->id]);
-                    $truck->update(['trip_status' => 'go']);
+                    $truck->update(['trip_status' => 'go', 'current_status' => 'on_route_to_loading']);
                 } else {
                     // Find this truck's currently open trip and attach the return leg
                     $openTrip = Trip::where('truck_id', $truck->id)
@@ -115,7 +117,7 @@ class BookingController extends Controller
                         $bookingTruck->update(['trip_id' => $openTrip->id]);
                     }
 
-                    $truck->update(['trip_status' => 'return']);
+                    $truck->update(['trip_status' => 'return', 'current_status' => 'on_route_to_loading']);
                 }
             }
 
@@ -165,6 +167,20 @@ class BookingController extends Controller
         });
 
         return $booking->load($this->eagerLoad());
+    }
+    public function download(Booking $booking)
+    {
+        $booking->load($this->eagerLoad());
+
+        $logoPath = public_path('images/logo.png');
+        $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+
+        $pdf = Pdf::loadView('bookings.access-list-pdf', [
+            'booking' => $booking,
+            'logoBase64' => $logoBase64,
+        ]);
+
+        return $pdf->download("booking-{$booking->booking_number}.pdf");
     }
 
     public function destroy(Booking $booking)

@@ -25,6 +25,8 @@ use App\Http\Controllers\Api\VendorController;
 
 use App\Http\Controllers\Api\BookingController;
 
+use App\Http\Controllers\Api\TripController;
+
 use App\Http\Controllers\Api\CheckpointController;
 use App\Http\Controllers\Api\TrackingController;
 
@@ -68,14 +70,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('bookings/eligible-trucks', [BookingController::class, 'eligibleTrucks']);
     Route::apiResource('bookings', BookingController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+    Route::get('bookings/{booking}/download', [BookingController::class, 'download']);
 
     Route::apiResource('checkpoints', CheckpointController::class)->only(['index', 'store']);
+
+    Route::get('tracking/export-excel', [TrackingController::class, 'downloadExcel']);
     Route::get('tracking', [TrackingController::class, 'index']);
     Route::get('tracking/{truck}', [TrackingController::class, 'show']);
     Route::put('tracking/{truck}/status', [TrackingController::class, 'updateStatus']);
     Route::post('tracking/{truck}/milestones', [TrackingController::class, 'upsertMilestone']);
     Route::get('tracking/{truck}/download', [TrackingController::class, 'download']);
     Route::put('booking-trucks/{bookingTruck}/dates', [TrackingController::class, 'updateTripDates']);
+
+
+
     Route::get('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'index']);
     Route::post('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'store']);
 
@@ -85,6 +93,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('expense-orders/{expenseOrder}/approve', [ExpenseOrderController::class, 'approve']);
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);
     Route::post('expense-orders/{expenseOrder}/mark-paid', [ExpenseOrderController::class, 'markPaid']);
+
+    Route::apiResource('trips', TripController::class)->only(['index', 'show']);
 
     Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 });
