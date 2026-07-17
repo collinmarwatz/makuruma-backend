@@ -27,7 +27,10 @@ class TruckDocumentController extends Controller
             $validated['attachment_path'] = $request->file('attachment')->store('documents', 'public');
         }
 
-        $document = $truck->documents()->create($validated);
+        $document = $truck->documents()->updateOrCreate(
+            ['document_type' => $validated['document_type']],
+            $validated
+        );
 
         return response()->json($document, 201);
     }

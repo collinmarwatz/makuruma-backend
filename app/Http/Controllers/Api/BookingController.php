@@ -22,12 +22,11 @@ class BookingController extends Controller
             'creator',
             'bookingTrucks.truck',
             'bookingTrucks.trailer',
-            'bookingTrucks.driver',
+            'bookingTrucks.driver.documents',
             'bookingTrucks.documents',
             'bookingTrucks.trip',
         ];
     }
-
     public function index()
     {
         return Booking::with($this->eagerLoad())->latest()->get();
@@ -49,7 +48,7 @@ class BookingController extends Controller
 
         $status = $validated['direction'] === 'go' ? 'off_duty' : 'go';
 
-        return Truck::with(['trailer', 'driver'])
+        return Truck::with(['trailer', 'driver.documents'])
             ->where('trip_status', $status)
             ->get();
     }

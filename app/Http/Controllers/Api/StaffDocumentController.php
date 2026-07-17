@@ -25,7 +25,10 @@ class StaffDocumentController extends Controller
             $validated['attachment_path'] = $request->file('attachment')->store('documents', 'public');
         }
 
-        $document = $staff->documents()->create($validated);
+        $document = $staff->documents()->updateOrCreate(
+            ['document_type' => $validated['document_type']],
+            $validated
+        );
 
         return response()->json($document, 201);
     }

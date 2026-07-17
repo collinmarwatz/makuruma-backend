@@ -58,34 +58,36 @@ class DashboardController extends Controller
 
     protected function bookingsSummary(): array
     {
-        $trips = Trip::with('legs')->get();
+        $totalTrips = Trip::count();
+        $completedTrips = Trip::whereNotNull('return_booking_truck_id')->count();
+        $awaitingReturn = $totalTrips - $completedTrips;
 
-        $awaitingReturn = $trips->filter(fn ($t) => !$t->legs->contains('direction', 'return'))->count();
-        $completed = $trips->count() - $awaitingReturn;
-
-        $thisMonth = Trip::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
+        $thisMonth = \App\Models\Booking::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
 
         return [
-            'total' => $trips->count(),
+            'total' => $totalTrips,
             'awaiting_return' => $awaitingReturn,
-            'completed' => $completed,
+            'completed' => $completedTrips,
             'this_month' => $thisMonth,
         ];
     }
 
     protected function trackingSummary(): array
     {
-        $counts = DB::table('booking_trucks')
-            ->select('current_status', DB::raw('count(*) as total'))
+        $counts = Truck::select('current_status', DB::raw('count(*) as total'))
             ->groupBy('current_status')
             ->pluck('total', 'current_status');
 
         return [
+            'pending' => $counts['pending'] ?? 0,
             'loading' => $counts['loading'] ?? 0,
             'in_transit' => $counts['in_transit'] ?? 0,
             'at_border' => $counts['at_border'] ?? 0,
             'offloading' => $counts['offloading'] ?? 0,
             'delayed' => $counts['delayed'] ?? 0,
+            'breakdown' => $counts['breakdown'] ?? 0,
             'completed' => $counts['completed'] ?? 0,
         ];
     }

@@ -26,7 +26,10 @@ class DriverDocumentController extends Controller
             $validated['attachment_path'] = $request->file('attachment')->store('documents', 'public');
         }
 
-        $document = $driver->documents()->create($validated);
+        $document = $driver->documents()->updateOrCreate(
+            ['document_type' => $validated['document_type']],
+            $validated
+        );
 
         return response()->json($document, 201);
     }

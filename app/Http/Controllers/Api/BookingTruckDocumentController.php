@@ -22,10 +22,10 @@ class BookingTruckDocumentController extends Controller
 
         $path = $request->file('attachment')->store('documents', 'public');
 
-        $document = $bookingTruck->documents()->create([
-            'document_type' => $validated['document_type'],
-            'attachment_path' => $path,
-        ]);
+        $document = $bookingTruck->documents()->updateOrCreate(
+            ['document_type' => $validated['document_type']],
+            ['attachment_path' => $path]
+        );
 
         return response()->json($document, 201);
     }

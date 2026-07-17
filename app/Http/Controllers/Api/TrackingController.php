@@ -18,7 +18,7 @@ class TrackingController extends Controller
             'driver',
             'milestones.checkpoint',
             'bookingTrucks' => function ($query) {
-                $query->latest()->limit(1)->with(['tripLeg.trip', 'tripLeg.client', 'documents']);
+                $query->latest()->limit(1)->with(['booking.client', 'trip', 'documents']);
             }
         ];
     }
@@ -37,10 +37,14 @@ class TrackingController extends Controller
     {
         $validated = $request->validate([
             'current_location' => 'nullable|string',
-            'current_status' => 'required|in:loading,in_transit,at_border,offloading,delayed,breakdown,completed',
+            'current_status' => 'required|in:pending,loading,in_transit,at_border,offloading,delayed,breakdown,completed',
         ]);
 
         $truck->update($validated);
+
+        if ($validated['current_status'] === 'completed') {
+            $truck->update(['trip_status' => 'off_duty']);
+        }
 
         return $truck->load($this->eagerLoad());
     }
