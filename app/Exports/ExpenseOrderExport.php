@@ -43,15 +43,15 @@ class ExpenseOrderExport implements WithEvents
 
         // --- Company header ---
         $sheet->setCellValue('C1', 'MAKURUMA LOGISTICS LIMITED');
-        $sheet->mergeCells('C1:G1');
+        $sheet->mergeCells('C1:H1');
         $sheet->getStyle('C1')->getFont()->setBold(true)->setSize(14);
 
         $sheet->setCellValue('C2', 'P.O.Box 31902 Dar es salaam-Tanzania, Tel:+255 710 001100, +255 713 013132.');
-        $sheet->mergeCells('C2:G2');
+        $sheet->mergeCells('C2:H2');
         $sheet->getStyle('C2')->getFont()->setSize(9)->setItalic(true);
 
         $sheet->setCellValue('A4', 'EXPENSE ORDER — ' . $this->expense->order_number);
-        $sheet->mergeCells('A4:G4');
+        $sheet->mergeCells('A4:H4');
         $sheet->getStyle('A4')->getFont()->setBold(true)->setSize(13);
         $sheet->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -59,7 +59,7 @@ class ExpenseOrderExport implements WithEvents
         $row = 6;
         $infoPairs = [
             ['Category', ucfirst($this->expense->category)],
-            ['Reference', $this->expense->trip->trip_number ?? $this->expense->truck->reg_no ?? '—'],
+            ['Reference', $this->expense->booking->booking_number ?? $this->expense->truck->reg_no ?? '—'],
             ['Status', strtoupper($this->expense->status)],
         ];
         $col = 'A';
@@ -98,15 +98,15 @@ class ExpenseOrderExport implements WithEvents
         }
 
         $tableStartRow = $row + 3;
-        $headers = ['S/N', 'Category', 'Vendor', 'Description', 'Amount (per truck)', 'No. of Trucks', 'Total (TZS)'];
+        $headers = ['S/N', 'Category', 'Vendor', 'Description', 'Trip Code', 'Amount (per truck)', 'No. of Trucks', 'Total (TZS)'];
         $headerRow = $tableStartRow;
 
         foreach ($headers as $i => $header) {
             $cell = chr(ord('A') + $i) . $headerRow;
             $sheet->setCellValue($cell, $header);
         }
-        $sheet->getStyle('A' . $headerRow . ':G' . $headerRow)->getFont()->setBold(true)->getColor()->setRGB($white);
-        $sheet->getStyle('A' . $headerRow . ':G' . $headerRow)->getFill()
+        $sheet->getStyle('A' . $headerRow . ':H' . $headerRow)->getFont()->setBold(true)->getColor()->setRGB($white);
+        $sheet->getStyle('A' . $headerRow . ':H' . $headerRow)->getFill()
             ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($darkBlue);
 
         $dataRow = $headerRow + 1;
@@ -115,16 +115,19 @@ class ExpenseOrderExport implements WithEvents
             $first = $group->first();
             $count = $group->count();
             $groupTotal = $group->sum('amount') ?? 0;
+            $tripCode = $first->bookingTruck->trip->trip_code ?? '—';
+            $tripCodeDisplay = $count > 1 ? $tripCode . ' (+' . ($count - 1) . ' more)' : $tripCode;
 
             $sheet->setCellValue('A' . $dataRow, $sn++);
             $sheet->setCellValue('B' . $dataRow, str_replace('_', ' ', ucfirst($first->line_category)));
             $sheet->setCellValue('C' . $dataRow, $first->vendor->company_name ?? '—');
             $sheet->setCellValue('D' . $dataRow, $first->description);
-            $sheet->setCellValue('E' . $dataRow, $first->currency . ' ' . number_format($first->original_amount ?? 0, 2));
-            $sheet->setCellValue('F' . $dataRow, $count);
-            $sheet->setCellValue('G' . $dataRow, number_format($groupTotal, 2));
+            $sheet->setCellValue('E' . $dataRow, $tripCodeDisplay);
+            $sheet->setCellValue('F' . $dataRow, $first->currency . ' ' . number_format($first->original_amount ?? 0, 2));
+            $sheet->setCellValue('G' . $dataRow, $count);
+            $sheet->setCellValue('H' . $dataRow, number_format($groupTotal, 2));
 
-            $sheet->getStyle('A' . $dataRow . ':G' . $dataRow)->getBorders()->getBottom()
+            $sheet->getStyle('A' . $dataRow . ':H' . $dataRow)->getBorders()->getBottom()
                 ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('E5E7EB');
 
             $dataRow++;
@@ -132,10 +135,10 @@ class ExpenseOrderExport implements WithEvents
 
         // --- Total row ---
         $sheet->setCellValue('A' . $dataRow, 'Total (TZS)');
-        $sheet->mergeCells('A' . $dataRow . ':F' . $dataRow);
-        $sheet->setCellValue('G' . $dataRow, number_format($this->expense->total_amount ?? 0, 2));
-        $sheet->getStyle('A' . $dataRow . ':G' . $dataRow)->getFont()->setBold(true);
-        $sheet->getStyle('A' . $dataRow . ':G' . $dataRow)->getFill()
+        $sheet->mergeCells('A' . $dataRow . ':G' . $dataRow);
+        $sheet->setCellValue('H' . $dataRow, number_format($this->expense->total_amount ?? 0, 2));
+        $sheet->getStyle('A' . $dataRow . ':H' . $dataRow)->getFont()->setBold(true);
+        $sheet->getStyle('A' . $dataRow . ':H' . $dataRow)->getFill()
             ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB($lightGray);
 
         // --- Trucks covered ---
@@ -158,7 +161,7 @@ class ExpenseOrderExport implements WithEvents
         }
 
         // --- Column widths ---
-        foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G'] as $col) {
+        foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as $col) {
             $sheet->getColumnDimension($col)->setWidth($col === 'D' ? 30 : 18);
         }
     }

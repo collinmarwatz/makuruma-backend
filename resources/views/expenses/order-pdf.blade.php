@@ -236,6 +236,7 @@
                 <th>Category</th>
                 <th>Vendor</th>
                 <th>Description</th>
+                <th>Trip Code</th>
                 <th style="text-align:right;">Amount (per truck)</th>
                 <th style="text-align:center;">No. of Trucks</th>
                 <th style="text-align:right;">Total (TZS)</th>
@@ -253,6 +254,7 @@
                     <td>{{ str_replace('_', ' ', ucfirst($first->line_category)) }}</td>
                     <td>{{ $first->vendor->company_name ?? '—' }}</td>
                     <td>{{ $first->description }}</td>
+                    <td>{{ $line->bookingTruck->trip->trip_code ?? '—' }}</td>
                     <td style="text-align:right;">{{ $first->currency }}
                         {{ number_format($first->original_amount ?? 0, 2) }}
                     </td>
