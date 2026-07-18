@@ -87,12 +87,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'index']);
     Route::post('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'store']);
 
+    Route::get('expense-orders/{expenseOrder}/download-category/{category}', [ExpenseOrderController::class, 'downloadCategory']);
     Route::get('expense-orders/{expenseOrder}/download', [ExpenseOrderController::class, 'download']);
     Route::get('expense-orders/{expenseOrder}/download-excel', [ExpenseOrderController::class, 'downloadExcel']);
     Route::apiResource('expense-orders', ExpenseOrderController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('expense-orders/{expenseOrder}/approve', [ExpenseOrderController::class, 'approve']);
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);
     Route::post('expense-orders/{expenseOrder}/mark-paid', [ExpenseOrderController::class, 'markPaid']);
+
 
     Route::apiResource('trips', TripController::class)->only(['index', 'show']);
 

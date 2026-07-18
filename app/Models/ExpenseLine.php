@@ -19,17 +19,19 @@ class ExpenseLine extends Model
         'description',
         'currency',
         'exchange_rate',
+        'quantity',
+        'unit_rate',
         'original_amount',
         'amount',
     ];
 
-    public function bookingTruck(): BelongsTo
-    {
-        return $this->belongsTo(BookingTruck::class);
-    }
     protected static function booted(): void
     {
         static::saving(function (ExpenseLine $line) {
+            if ($line->quantity !== null && $line->unit_rate !== null) {
+                $line->original_amount = round($line->quantity * $line->unit_rate, 2);
+            }
+
             if ($line->original_amount !== null) {
                 $rate = $line->currency === 'TZS' ? 1 : ($line->exchange_rate ?: 1);
                 $line->amount = round($line->original_amount * $rate, 2);
@@ -45,5 +47,10 @@ class ExpenseLine extends Model
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class);
+    }
+
+    public function bookingTruck(): BelongsTo
+    {
+        return $this->belongsTo(BookingTruck::class);
     }
 }

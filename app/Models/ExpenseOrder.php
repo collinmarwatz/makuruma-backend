@@ -15,7 +15,7 @@ class ExpenseOrder extends Model
     protected $fillable = [
         'order_number',
         'category',
-        'trip_id',
+        'booking_id',
         'truck_id',
         'status',
         'created_by',
@@ -24,8 +24,10 @@ class ExpenseOrder extends Model
         'paid_by',
         'paid_at',
         'total_amount',
+        'payment_account',
+        'initiated_by',
+        'payment_date',
     ];
-
     protected $casts = [
         'approved_at' => 'datetime',
         'paid_at' => 'datetime',
@@ -38,9 +40,9 @@ class ExpenseOrder extends Model
         return $this->hasMany(ExpenseLine::class);
     }
 
-    public function trip(): BelongsTo
+    public function booking(): BelongsTo
     {
-        return $this->belongsTo(Trip::class);
+        return $this->belongsTo(Booking::class);
     }
 
     public function truck(): BelongsTo
