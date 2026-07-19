@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\ExpenseOrderController;
 
 use App\Http\Controllers\Api\InvoiceController;
 
+use App\Http\Controllers\Api\TruckProfitReportController;
 
 use App\Http\Controllers\Api\DashboardController;
 
@@ -104,6 +105,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::apiResource('trips', TripController::class)->only(['index', 'show']);
+
+    Route::get('trucks/{truck}/profit-report', [TruckProfitReportController::class, 'downloadExcel']);
 
     Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 });

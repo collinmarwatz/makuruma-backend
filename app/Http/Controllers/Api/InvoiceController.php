@@ -74,6 +74,7 @@ class InvoiceController extends Controller
             'lines.*.quantity' => 'required|numeric|min:0',
             'lines.*.rate' => 'required|numeric|min:0',
             'lines.*.days' => 'nullable|integer|min:0',
+            'exchange_rate' => 'required|numeric|min:0.0001',
         ]);
 
         $booking = Booking::with('client')->findOrFail($validated['booking_id']);
@@ -102,6 +103,7 @@ class InvoiceController extends Controller
                 'destination' => $validated['destination'] ?? null,
                 'terms_of_delivery' => $validated['terms_of_delivery'] ?? null,
                 'created_by' => request()->user()->id,
+                'exchange_rate' => $validated['exchange_rate'],
             ]);
 
             foreach ($validated['lines'] as $lineData) {

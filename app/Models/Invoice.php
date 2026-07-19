@@ -31,8 +31,17 @@ class Invoice extends Model
         'terms_of_delivery',
         'proof_of_delivery_path',
         'total_amount',
+        'exchange_rate',
         'created_by',
     ];
+
+    protected $appends = ['total_amount_tzs'];
+
+    public function getTotalAmountTzsAttribute(): float
+    {
+        $rate = $this->exchange_rate ?: 1;
+        return round(((float) $this->total_amount) * $rate, 2);
+    }
 
     public function booking(): BelongsTo
     {
