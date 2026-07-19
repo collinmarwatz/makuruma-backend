@@ -20,6 +20,7 @@ class ClientController extends Controller
             'short_code' => 'nullable|string|max:5|unique:clients,short_code',
             'email' => 'nullable|email',
             'phone' => 'nullable|string',
+            'allows_advance_invoice' => 'sometimes|boolean',
         ]);
 
         $client = Client::create($validated);
@@ -39,6 +40,7 @@ class ClientController extends Controller
             'short_code' => 'nullable|string|max:5|unique:clients,short_code,' . $client->id,
             'email' => 'nullable|email',
             'phone' => 'nullable|string',
+            'allows_advance_invoice' => 'sometimes|boolean',
         ]);
 
         $client->update($validated);

@@ -32,6 +32,9 @@ use App\Http\Controllers\Api\TrackingController;
 
 use App\Http\Controllers\Api\ExpenseOrderController;
 
+use App\Http\Controllers\Api\InvoiceController;
+
+
 use App\Http\Controllers\Api\DashboardController;
 
 // Public routes — no login required
@@ -94,6 +97,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('expense-orders/{expenseOrder}/approve', [ExpenseOrderController::class, 'approve']);
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);
     Route::post('expense-orders/{expenseOrder}/mark-paid', [ExpenseOrderController::class, 'markPaid']);
+
+    Route::get('invoices/eligible-trucks', [InvoiceController::class, 'eligibleTrucks']);
+    Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show', 'destroy']);
+    Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download']);
 
 
     Route::apiResource('trips', TripController::class)->only(['index', 'show']);

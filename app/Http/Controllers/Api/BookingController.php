@@ -185,7 +185,32 @@ class BookingController extends Controller
 
     public function destroy(Booking $booking)
     {
-        $booking->delete();
+        DB::transaction(function () use ($booking) {
+            $bookingTrucks = $booking->bookingTrucks()->with('trip', 'truck')->get();
+
+            foreach ($bookingTrucks as $bookingTruck) {
+                $truck = $bookingTruck->truck;
+                $trip = $bookingTruck->trip;
+
+                if ($booking->direction === 'go') {
+                    // This was the Go leg — if no Return has happened yet,
+                    // the whole Trip record is meaningless without it.
+                    if ($trip && !$trip->return_booking_truck_id) {
+                        $trip->delete();
+                    }
+                    $truck?->update(['trip_status' => 'off_duty']);
+                } else {
+                    // This was the Return leg — the truck goes back to
+                    // "awaiting return," exactly as if it was never booked.
+                    if ($trip) {
+                        $trip->update(['return_booking_truck_id' => null]);
+                    }
+                    $truck?->update(['trip_status' => 'go']);
+                }
+            }
+
+            $booking->delete();
+        });
 
         return response()->json(null, 204);
     }
