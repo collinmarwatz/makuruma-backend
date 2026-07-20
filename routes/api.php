@@ -87,9 +87,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('booking-trucks/{bookingTruck}/dates', [TrackingController::class, 'updateTripDates']);
 
 
-
     Route::get('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'index']);
     Route::post('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'store']);
+    Route::delete('bookings/{booking}/trucks/{bookingTruck}', [BookingController::class, 'removeTruck']);
 
     Route::get('expense-orders/{expenseOrder}/download-category/{category}', [ExpenseOrderController::class, 'downloadCategory']);
     Route::get('expense-orders/{expenseOrder}/download', [ExpenseOrderController::class, 'download']);
@@ -100,8 +100,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('expense-orders/{expenseOrder}/mark-paid', [ExpenseOrderController::class, 'markPaid']);
 
     Route::get('invoices/eligible-trucks', [InvoiceController::class, 'eligibleTrucks']);
-    Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show', 'destroy']);
+    Route::apiResource('invoices', InvoiceController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download']);
+    Route::post('invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid']);
 
 
     Route::apiResource('trips', TripController::class)->only(['index', 'show']);

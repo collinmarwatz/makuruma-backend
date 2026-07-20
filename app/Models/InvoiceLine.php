@@ -10,8 +10,7 @@ class InvoiceLine extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['invoice_id', 'booking_truck_id', 'description', 'quantity', 'rate', 'days', 'amount'];
-
+    protected $fillable = ['invoice_id', 'booking_truck_id', 'description', 'quantity', 'rate', 'percentage', 'is_flat_amount', 'days', 'amount'];
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);

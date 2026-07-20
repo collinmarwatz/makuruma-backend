@@ -32,8 +32,20 @@ class Invoice extends Model
         'proof_of_delivery_path',
         'total_amount',
         'exchange_rate',
+        'status',
+        'paid_at',
+        'paid_by',
         'created_by',
     ];
+
+    protected $casts = [
+        'paid_at' => 'datetime',
+    ];
+
+    public function payer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_by');
+    }
 
     protected $appends = ['total_amount_tzs'];
 

@@ -15,12 +15,32 @@ class InvoiceController extends Controller
 {
     protected function eagerLoad()
     {
-        return ['booking.client', 'lines.bookingTruck.truck', 'lines.bookingTruck.trailer', 'lines.bookingTruck.trip', 'creator'];
+        return ['booking.client', 'lines.bookingTruck.truck', 'lines.bookingTruck.trailer', 'lines.bookingTruck.trip', 'creator', 'payer'];
     }
 
-    public function index()
+    protected function lineRules(): array
     {
-        return Invoice::with($this->eagerLoad())->latest()->get();
+        return [
+            'lines' => 'required|array|min:1',
+            'lines.*.booking_truck_id' => 'required|exists:booking_trucks,id',
+            'lines.*.quantity' => 'nullable|numeric|min:0',
+            'lines.*.rate' => 'nullable|numeric|min:0',
+            'lines.*.percentage' => 'nullable|numeric|min:0|max:100',
+            'lines.*.is_flat_amount' => 'nullable|boolean',
+            'lines.*.flat_amount' => 'required_if:lines.*.is_flat_amount,true|nullable|numeric|min:0',
+            'lines.*.days' => 'nullable|integer|min:0',
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        $query = Invoice::with($this->eagerLoad());
+
+        if ($request->filled('booking_number')) {
+            $query->whereHas('booking', fn($q) => $q->where('booking_number', 'like', '%' . $request->booking_number . '%'));
+        }
+
+        return $query->latest()->get();
     }
 
     public function show(Invoice $invoice)
@@ -28,35 +48,29 @@ class InvoiceController extends Controller
         return $invoice->load($this->eagerLoad());
     }
 
-    /**
-     * Trucks in this booking that don't yet have an invoice line
-     * under this specific invoice type — the "partial invoicing" picker.
-     */
-    public function eligibleTrucks(Request $request)
+    protected function computeLineAmount(string $invoiceType, array $lineData, BookingTruck $bookingTruck): float
     {
-        $validated = $request->validate([
-            'booking_id' => 'required|exists:bookings,id',
-            'invoice_type' => 'required|in:advance,settlement,standing_time,adjustment',
-        ]);
+        $quantity = (float) ($lineData['quantity'] ?? 0);
+        $rate = (float) ($lineData['rate'] ?? 0);
 
-        $booking = Booking::findOrFail($validated['booking_id']);
-
-        return BookingTruck::where('booking_id', $booking->id)
-            ->with(['truck', 'trailer', 'trip'])
-            ->whereDoesntHave('invoiceLines', function ($query) use ($validated) {
-                $query->whereHas('invoice', function ($q) use ($validated) {
-                    $q->where('invoice_type', $validated['invoice_type']);
-                });
-            })
-            ->get();
+        return match ($invoiceType) {
+            'advance' => !empty($lineData['is_flat_amount'])
+            ? (float) $lineData['flat_amount']
+            : $quantity * $rate * (((float) ($lineData['percentage'] ?? 100)) / 100),
+            'settlement' => max(0, ($quantity * $rate) - $this->previousAdvanceTotal($bookingTruck->id)),
+            'standing_time' => ((float) ($lineData['days'] ?? 0)) * $rate,
+            'adjustment' => $quantity * $rate,
+            default => 0,
+        };
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'invoice_type' => 'required|in:advance,settlement,standing_time,adjustment',
             'booking_id' => 'required|exists:bookings,id',
             'invoice_date' => 'required|date',
+            'exchange_rate' => 'required|numeric|min:0.0001',
             'deal_no' => 'nullable|string',
             'bivac_no' => 'nullable|string',
             'mode_of_payment' => 'nullable|string',
@@ -69,13 +83,7 @@ class InvoiceController extends Controller
             'dispatched_through' => 'nullable|string',
             'destination' => 'nullable|string',
             'terms_of_delivery' => 'nullable|string',
-            'lines' => 'required|array|min:1',
-            'lines.*.booking_truck_id' => 'required|exists:booking_trucks,id',
-            'lines.*.quantity' => 'required|numeric|min:0',
-            'lines.*.rate' => 'required|numeric|min:0',
-            'lines.*.days' => 'nullable|integer|min:0',
-            'exchange_rate' => 'required|numeric|min:0.0001',
-        ]);
+        ], $this->lineRules()));
 
         $booking = Booking::with('client')->findOrFail($validated['booking_id']);
 
@@ -90,6 +98,7 @@ class InvoiceController extends Controller
                 'booking_id' => $booking->id,
                 'client_id' => $booking->client_id,
                 'invoice_date' => $validated['invoice_date'],
+                'exchange_rate' => $validated['exchange_rate'],
                 'deal_no' => $validated['deal_no'] ?? null,
                 'bivac_no' => $validated['bivac_no'] ?? null,
                 'mode_of_payment' => $validated['mode_of_payment'] ?? null,
@@ -102,38 +111,89 @@ class InvoiceController extends Controller
                 'dispatched_through' => $validated['dispatched_through'] ?? null,
                 'destination' => $validated['destination'] ?? null,
                 'terms_of_delivery' => $validated['terms_of_delivery'] ?? null,
+                'status' => 'pending',
                 'created_by' => request()->user()->id,
-                'exchange_rate' => $validated['exchange_rate'],
             ]);
 
-            foreach ($validated['lines'] as $lineData) {
-                $bookingTruck = BookingTruck::with('truck', 'trailer')->findOrFail($lineData['booking_truck_id']);
-                $quantity = $lineData['quantity'];
-                $rate = $lineData['rate'];
-
-                $amount = match ($validated['invoice_type']) {
-                    'advance' => $quantity * $rate,
-                    'settlement' => ($quantity * $rate) - $this->previousAdvanceTotal($bookingTruck->id),
-                    'standing_time' => ($lineData['days'] ?? 0) * $rate,
-                    'adjustment' => $quantity * $rate,
-                };
-
-                $invoice->lines()->create([
-                    'booking_truck_id' => $bookingTruck->id,
-                    'description' => trim("{$bookingTruck->truck->reg_no}/{$bookingTruck->trailer->reg_no}", '/'),
-                    'quantity' => $quantity,
-                    'rate' => $rate,
-                    'days' => $lineData['days'] ?? null,
-                    'amount' => round($amount, 2),
-                ]);
-            }
-
+            $this->createLines($invoice, $validated['lines'], $validated['invoice_type']);
             $invoice->recalculateTotal();
 
             return $invoice;
         });
 
         return response()->json($invoice->load($this->eagerLoad()), 201);
+    }
+
+    public function update(Request $request, Invoice $invoice)
+    {
+        if ($invoice->status !== 'pending') {
+            return response()->json(['message' => 'Only unpaid invoices can be edited.'], 422);
+        }
+
+        $validated = $request->validate(array_merge([
+            'invoice_date' => 'required|date',
+            'exchange_rate' => 'required|numeric|min:0.0001',
+            'deal_no' => 'nullable|string',
+            'bivac_no' => 'nullable|string',
+            'mode_of_payment' => 'nullable|string',
+            'delivery_note_no' => 'nullable|string',
+            'delivery_note_date' => 'nullable|date',
+            'supplier_ref' => 'nullable|string',
+            'other_ref' => 'nullable|string',
+            'loading_con_no' => 'nullable|string',
+            'settlement_no' => 'nullable|string',
+            'dispatched_through' => 'nullable|string',
+            'destination' => 'nullable|string',
+            'terms_of_delivery' => 'nullable|string',
+        ], $this->lineRules()));
+
+        DB::transaction(function () use ($invoice, $validated) {
+            $invoice->update([
+                'invoice_date' => $validated['invoice_date'],
+                'exchange_rate' => $validated['exchange_rate'],
+                'deal_no' => $validated['deal_no'] ?? null,
+                'bivac_no' => $validated['bivac_no'] ?? null,
+                'mode_of_payment' => $validated['mode_of_payment'] ?? null,
+                'delivery_note_no' => $validated['delivery_note_no'] ?? null,
+                'delivery_note_date' => $validated['delivery_note_date'] ?? null,
+                'supplier_ref' => $validated['supplier_ref'] ?? null,
+                'other_ref' => $validated['other_ref'] ?? null,
+                'loading_con_no' => $validated['loading_con_no'] ?? null,
+                'settlement_no' => $validated['settlement_no'] ?? null,
+                'dispatched_through' => $validated['dispatched_through'] ?? null,
+                'destination' => $validated['destination'] ?? null,
+                'terms_of_delivery' => $validated['terms_of_delivery'] ?? null,
+            ]);
+
+            $invoice->lines()->delete();
+            $this->createLines($invoice, $validated['lines'], $invoice->invoice_type);
+            $invoice->recalculateTotal();
+        });
+
+        return $invoice->load($this->eagerLoad());
+    }
+
+    protected function createLines(Invoice $invoice, array $lines, string $invoiceType): void
+    {
+        foreach ($lines as $lineData) {
+            $bookingTruck = BookingTruck::with('truck', 'trailer')->findOrFail($lineData['booking_truck_id']);
+            $amount = $this->computeLineAmount($invoiceType, $lineData, $bookingTruck);
+
+            $truckReg = $bookingTruck->truck->reg_no ?? '—';
+            $trailerReg = $bookingTruck->trailer->reg_no ?? null;
+            $description = $trailerReg ? "{$truckReg}/{$trailerReg}" : $truckReg;
+
+            $invoice->lines()->create([
+                'booking_truck_id' => $bookingTruck->id,
+                'description' => $description,
+                'quantity' => $lineData['quantity'] ?? null,
+                'rate' => $lineData['rate'] ?? null,
+                'percentage' => $lineData['percentage'] ?? null,
+                'is_flat_amount' => $lineData['is_flat_amount'] ?? false,
+                'days' => $lineData['days'] ?? null,
+                'amount' => round($amount, 2),
+            ]);
+        }
     }
 
     protected function previousAdvanceTotal(int $bookingTruckId): float
@@ -143,6 +203,42 @@ class InvoiceController extends Controller
             ->where('invoice_lines.booking_truck_id', $bookingTruckId)
             ->where('invoices.invoice_type', 'advance')
             ->sum('invoice_lines.amount');
+    }
+
+    public function markPaid(Request $request, Invoice $invoice)
+    {
+        $userRole = $request->user()->role?->slug;
+        if (!in_array($userRole, ['accountant', 'admin'])) {
+            abort(403, 'You do not have permission to confirm payment.');
+        }
+
+        if ($invoice->status !== 'pending') {
+            return response()->json(['message' => 'This invoice is already marked as paid.'], 422);
+        }
+
+        $invoice->update(['status' => 'paid', 'paid_by' => $request->user()->id, 'paid_at' => now()]);
+
+        return $invoice->load($this->eagerLoad());
+    }
+
+    public function eligibleTrucks(Request $request)
+    {
+        $validated = $request->validate([
+            'booking_id' => 'required|exists:bookings,id',
+            'invoice_type' => 'required|in:advance,settlement,standing_time,adjustment',
+        ]);
+
+        $booking = Booking::findOrFail($validated['booking_id']);
+
+        return BookingTruck::where('booking_id', $booking->id)
+            ->whereNull('removed_at')
+            ->with(['truck', 'trailer', 'trip'])
+            ->whereDoesntHave('invoiceLines', function ($query) use ($validated) {
+                $query->whereHas('invoice', function ($q) use ($validated) {
+                    $q->where('invoice_type', $validated['invoice_type']);
+                });
+            })
+            ->get();
     }
 
     public function destroy(Invoice $invoice)
