@@ -22,21 +22,21 @@ use App\Http\Controllers\Api\OfficeAssetController;
 
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\VendorController;
+use App\Http\Controllers\Api\VendorPaymentController;
 
 use App\Http\Controllers\Api\BookingController;
-
+use App\Http\Controllers\Api\BookingTruckDocumentController;
 use App\Http\Controllers\Api\TripController;
 
 use App\Http\Controllers\Api\CheckpointController;
 use App\Http\Controllers\Api\TrackingController;
 
 use App\Http\Controllers\Api\ExpenseOrderController;
-
 use App\Http\Controllers\Api\InvoiceController;
 
-use App\Http\Controllers\Api\TruckProfitReportController;
-
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\TruckProfitReportController;
+use App\Http\Controllers\Api\ReconciliationController;
 
 // Public routes — no login required
 Route::post('register', [AuthController::class, 'register']);
@@ -71,10 +71,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('clients', ClientController::class);
     Route::apiResource('vendors', VendorController::class);
+    Route::apiResource('vendor-payments', VendorPaymentController::class)->only(['store', 'destroy']);
 
     Route::get('bookings/eligible-trucks', [BookingController::class, 'eligibleTrucks']);
     Route::apiResource('bookings', BookingController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::get('bookings/{booking}/download', [BookingController::class, 'download']);
+    Route::delete('bookings/{booking}/trucks/{bookingTruck}', [BookingController::class, 'removeTruck']);
+
+    Route::apiResource('trips', TripController::class)->only(['index', 'show']);
+    Route::get('trucks/{truck}/profit-report', [TruckProfitReportController::class, 'downloadExcel']);
 
     Route::apiResource('checkpoints', CheckpointController::class)->only(['index', 'store']);
 
@@ -85,15 +90,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('tracking/{truck}/milestones', [TrackingController::class, 'upsertMilestone']);
     Route::get('tracking/{truck}/download', [TrackingController::class, 'download']);
     Route::put('booking-trucks/{bookingTruck}/dates', [TrackingController::class, 'updateTripDates']);
+    Route::get('booking-trucks/{bookingTruck}/documents', [BookingTruckDocumentController::class, 'index']);
+    Route::post('booking-trucks/{bookingTruck}/documents', [BookingTruckDocumentController::class, 'store']);
 
-
-    Route::get('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'index']);
-    Route::post('booking-trucks/{bookingTruck}/documents', [\App\Http\Controllers\Api\BookingTruckDocumentController::class, 'store']);
-    Route::delete('bookings/{booking}/trucks/{bookingTruck}', [BookingController::class, 'removeTruck']);
-
-    Route::get('expense-orders/{expenseOrder}/download-category/{category}', [ExpenseOrderController::class, 'downloadCategory']);
     Route::get('expense-orders/{expenseOrder}/download', [ExpenseOrderController::class, 'download']);
     Route::get('expense-orders/{expenseOrder}/download-excel', [ExpenseOrderController::class, 'downloadExcel']);
+    Route::get('expense-orders/{expenseOrder}/download-category/{category}', [ExpenseOrderController::class, 'downloadCategory']);
     Route::apiResource('expense-orders', ExpenseOrderController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('expense-orders/{expenseOrder}/approve', [ExpenseOrderController::class, 'approve']);
     Route::post('expense-orders/{expenseOrder}/reject', [ExpenseOrderController::class, 'reject']);
@@ -104,10 +106,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download']);
     Route::post('invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid']);
 
-
-    Route::apiResource('trips', TripController::class)->only(['index', 'show']);
-
-    Route::get('trucks/{truck}/profit-report', [TruckProfitReportController::class, 'downloadExcel']);
+    Route::get('reconciliation/clients/{client}/summary', [ReconciliationController::class, 'clientSummary']);
+    Route::get('reconciliation/clients/{client}/statement', [ReconciliationController::class, 'downloadClientStatement']);
+    Route::get('reconciliation/vendors/{vendor}/summary', [ReconciliationController::class, 'vendorSummary']);
+    Route::get('reconciliation/vendors/{vendor}/ledger', [ReconciliationController::class, 'downloadVendorLedger']);
 
     Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 });

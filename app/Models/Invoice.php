@@ -15,6 +15,7 @@ class Invoice extends Model
         'invoice_number',
         'deal_no',
         'bivac_no',
+        'purchase_order_no',
         'invoice_type',
         'booking_id',
         'client_id',
@@ -39,6 +40,7 @@ class Invoice extends Model
     ];
 
     protected $casts = [
+        'invoice_date' => 'date',
         'paid_at' => 'datetime',
     ];
 

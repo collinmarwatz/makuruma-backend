@@ -3,241 +3,30 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Booking;
 use App\Models\BookingTruck;
-use App\Models\Client;
-use App\Models\Trip;
-use App\Models\Truck;
-use App\Services\BookingNumberGenerator;
-use App\Services\TripCodeGenerator;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
 
-class BookingController extends Controller
+class BookingTruckDocumentController extends Controller
 {
-    protected function eagerLoad()
+    public function index(BookingTruck $bookingTruck)
     {
-        return [
-            'client',
-            'creator',
-            'bookingTrucks' => function ($query) {
-                $query->whereNull('removed_at')->with(['truck', 'trailer', 'driver.documents', 'documents', 'trip']);
-            },
-        ];
+        return $bookingTruck->documents;
     }
 
-    public function index()
-    {
-        return Booking::with($this->eagerLoad())->latest()->get();
-    }
-
-    public function show(Booking $booking)
-    {
-        return $booking->load($this->eagerLoad());
-    }
-
-    /**
-     * Trucks eligible for a NEW booking, given the requested direction.
-     * - Go: only trucks currently off_duty
-     * - Return: only trucks currently on an open 'go' trip
-     */
-    public function eligibleTrucks(Request $request)
-    {
-        $validated = $request->validate(['direction' => 'required|in:go,return']);
-
-        $status = $validated['direction'] === 'go' ? 'off_duty' : 'go';
-
-        return Truck::with(['trailer', 'driver'])
-            ->where('trip_status', $status)
-            ->get();
-    }
-
-    public function store(Request $request)
+    public function store(Request $request, BookingTruck $bookingTruck)
     {
         $validated = $request->validate([
-            'direction' => 'required|in:go,return',
-            'client_id' => 'required|exists:clients,id',
-            'eta' => 'nullable|date',
-            'location' => 'nullable|string',
-            'loading_point' => 'nullable|string',
-            'offloading_point' => 'nullable|string',
-            'description' => 'nullable|string',
-            'truck_ids' => 'required|array|min:1',
-            'truck_ids.*' => 'exists:trucks,id',
+            'document_type' => 'required|string',
+            'attachment' => 'required|file|max:5120',
         ]);
 
-        $client = Client::findOrFail($validated['client_id']);
-        $bookingNumber = BookingNumberGenerator::generate($client, count($validated['truck_ids']));
+        $path = $request->file('attachment')->store('documents', 'public');
 
-        $booking = DB::transaction(function () use ($validated, $bookingNumber, $request) {
-            $booking = Booking::create([
-                'booking_number' => $bookingNumber,
-                'direction' => $validated['direction'],
-                'client_id' => $validated['client_id'],
-                'eta' => $validated['eta'] ?? null,
-                'location' => $validated['location'] ?? null,
-                'loading_point' => $validated['loading_point'] ?? null,
-                'offloading_point' => $validated['offloading_point'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'created_by' => $request->user()->id,
-            ]);
+        $document = $bookingTruck->documents()->updateOrCreate(
+            ['document_type' => $validated['document_type']],
+            ['attachment_path' => $path]
+        );
 
-            foreach ($validated['truck_ids'] as $truckId) {
-                $truck = Truck::findOrFail($truckId);
-
-                $bookingTruck = $booking->bookingTrucks()->create([
-                    'truck_id' => $truck->id,
-                    'trailer_id' => $truck->trailer_id,
-                    'driver_id' => $truck->driver_id,
-                    'capacity' => $truck->capacity,
-                ]);
-
-                if ($validated['direction'] === 'go') {
-                    $trip = Trip::create([
-                        'trip_code' => TripCodeGenerator::generate($truck->reg_no),
-                        'truck_id' => $truck->id,
-                        'go_booking_truck_id' => $bookingTruck->id,
-                    ]);
-
-                    $bookingTruck->update(['trip_id' => $trip->id]);
-                    $truck->update(['trip_status' => 'go', 'current_status' => 'on_route_to_loading']);
-                } else {
-                    $openTrip = Trip::where('truck_id', $truck->id)
-                        ->whereNull('return_booking_truck_id')
-                        ->latest()
-                        ->first();
-
-                    if ($openTrip) {
-                        $openTrip->update(['return_booking_truck_id' => $bookingTruck->id]);
-                        $bookingTruck->update(['trip_id' => $openTrip->id]);
-                    }
-
-                    $truck->update(['trip_status' => 'return', 'current_status' => 'on_route_to_loading']);
-                }
-            }
-
-            return $booking;
-        });
-
-        return response()->json($booking->load($this->eagerLoad()), 201);
-    }
-
-    public function update(Request $request, Booking $booking)
-    {
-        $validated = $request->validate([
-            'eta' => 'nullable|date',
-            'location' => 'nullable|string',
-            'loading_point' => 'nullable|string',
-            'offloading_point' => 'nullable|string',
-            'description' => 'nullable|string',
-            'trucks' => 'required|array|min:1',
-            'trucks.*.booking_truck_id' => 'required|exists:booking_trucks,id',
-            'trucks.*.cargo' => 'nullable|string',
-            'trucks.*.rate' => 'nullable|numeric',
-            'trucks.*.trailer_id' => 'nullable|exists:trailers,id',
-            'trucks.*.driver_id' => 'nullable|exists:drivers,id',
-        ]);
-
-        DB::transaction(function () use ($booking, $validated) {
-            $booking->update([
-                'eta' => $validated['eta'] ?? null,
-                'location' => $validated['location'] ?? null,
-                'loading_point' => $validated['loading_point'] ?? null,
-                'offloading_point' => $validated['offloading_point'] ?? null,
-                'description' => $validated['description'] ?? null,
-            ]);
-
-            foreach ($validated['trucks'] as $truckData) {
-                $bookingTruck = BookingTruck::find($truckData['booking_truck_id']);
-                if (!$bookingTruck || $bookingTruck->booking_id !== $booking->id)
-                    continue;
-
-                $bookingTruck->update([
-                    'cargo' => $truckData['cargo'] ?? null,
-                    'rate' => $truckData['rate'] ?? null,
-                    'trailer_id' => $truckData['trailer_id'] ?? $bookingTruck->trailer_id,
-                    'driver_id' => $truckData['driver_id'] ?? $bookingTruck->driver_id,
-                ]);
-            }
-        });
-
-        return $booking->load($this->eagerLoad());
-    }
-
-    /**
-     * Remove one truck from a booking — e.g. accident or complication —
-     * without deleting the whole booking. Preserves all Expense/Invoice
-     * history tied to that truck, and correctly frees its trip_status.
-     */
-    public function removeTruck(Booking $booking, BookingTruck $bookingTruck)
-    {
-        if ($bookingTruck->booking_id !== $booking->id) {
-            abort(404);
-        }
-
-        DB::transaction(function () use ($booking, $bookingTruck) {
-            $truck = $bookingTruck->truck;
-            $trip = $bookingTruck->trip;
-
-            if ($booking->direction === 'go') {
-                if ($trip && !$trip->return_booking_truck_id) {
-                    $trip->delete();
-                }
-                $truck?->update(['trip_status' => 'off_duty']);
-            } else {
-                if ($trip) {
-                    $trip->update(['return_booking_truck_id' => null]);
-                }
-                $truck?->update(['trip_status' => 'go']);
-            }
-
-            $bookingTruck->update(['removed_at' => now()]);
-        });
-
-        return response()->json(null, 204);
-    }
-
-    public function destroy(Booking $booking)
-    {
-        DB::transaction(function () use ($booking) {
-            $bookingTrucks = $booking->bookingTrucks()->with('trip', 'truck')->get();
-
-            foreach ($bookingTrucks as $bookingTruck) {
-                $truck = $bookingTruck->truck;
-                $trip = $bookingTruck->trip;
-
-                if ($booking->direction === 'go') {
-                    if ($trip && !$trip->return_booking_truck_id) {
-                        $trip->delete();
-                    }
-                    $truck?->update(['trip_status' => 'off_duty']);
-                } else {
-                    if ($trip) {
-                        $trip->update(['return_booking_truck_id' => null]);
-                    }
-                    $truck?->update(['trip_status' => 'go']);
-                }
-            }
-
-            $booking->delete();
-        });
-
-        return response()->json(null, 204);
-    }
-
-    public function download(Booking $booking)
-    {
-        $booking->load($this->eagerLoad());
-
-        $logoPath = public_path('images/logo.png');
-        $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
-
-        $pdf = Pdf::loadView('bookings.access-list-pdf', [
-            'booking' => $booking,
-            'logoBase64' => $logoBase64,
-        ]);
-
-        return $pdf->download("booking-{$booking->booking_number}.pdf");
+        return response()->json($document, 201);
     }
 }
