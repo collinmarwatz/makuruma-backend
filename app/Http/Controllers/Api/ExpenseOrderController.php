@@ -55,6 +55,7 @@ class ExpenseOrderController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate(array_merge([
+            'reference_no' => 'required|string|unique:expense_orders,reference_no',
             'category' => 'required|in:trip,office,truck',
             'booking_id' => 'nullable|exists:bookings,id',
             'truck_id' => 'nullable|exists:trucks,id',
@@ -74,6 +75,7 @@ class ExpenseOrderController extends Controller
         $order = DB::transaction(function () use ($validated, $orderNumber, $request) {
             $order = ExpenseOrder::create([
                 'order_number' => $orderNumber,
+                'reference_no' => $validated['reference_no'],
                 'category' => $validated['category'],
                 'booking_id' => $validated['booking_id'] ?? null,
                 'truck_id' => $validated['truck_id'] ?? null,
@@ -108,6 +110,7 @@ class ExpenseOrderController extends Controller
         }
 
         $validated = $request->validate(array_merge([
+            'reference_no' => 'required|string|unique:expense_orders,reference_no,' . $expenseOrder->id,
             'payment_account' => 'nullable|string',
             'initiated_by' => 'nullable|string',
             'payment_date' => 'nullable|date',
@@ -115,6 +118,7 @@ class ExpenseOrderController extends Controller
 
         DB::transaction(function () use ($expenseOrder, $validated) {
             $expenseOrder->update([
+                'reference_no' => $validated['reference_no'],
                 'payment_account' => $validated['payment_account'] ?? null,
                 'initiated_by' => $validated['initiated_by'] ?? null,
                 'payment_date' => $validated['payment_date'] ?? null,

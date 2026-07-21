@@ -49,12 +49,12 @@ class LineCategoryExpenseExport implements WithEvents
         $client = $this->expense->booking?->client?->company_name ?? '';
         $truckCount = $lines->pluck('booking_truck_id')->unique()->count();
 
-        $sheet->setCellValue('A1', 'NO. ' . $this->expense->id);
+        $sheet->setCellValue('A1', 'NO.' . ($this->expense->reference_no ?? $this->expense->id));
         $sheet->mergeCells('A1:E1');
         $sheet->getStyle('A1')->getFont()->setBold(true);
 
-        $title = $this->categoryLabel() . ' GARI ' . $truckCount . ' - ' . $this->expense->created_at->format('d.m.Y')
-            . ($client ? " - {$client}" : '');
+        $direction = $this->expense->booking?->direction === 'go' ? 'KWENDA' : 'KURUDI';
+        $title = $this->categoryLabel() . ' ' . $direction . ' - ' . $this->expense->created_at->format('d.m.Y');
         $sheet->setCellValue('A2', $title);
         $sheet->mergeCells('A2:E2');
         $sheet->getStyle('A2')->getFont()->setBold(true);

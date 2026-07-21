@@ -14,6 +14,7 @@ class ExpenseOrder extends Model
 
     protected $fillable = [
         'order_number',
+        'reference_no',
         'category',
         'booking_id',
         'truck_id',

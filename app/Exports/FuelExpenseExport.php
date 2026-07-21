@@ -5,7 +5,6 @@ namespace App\Exports;
 use App\Models\ExpenseOrder;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
@@ -30,15 +29,13 @@ class FuelExpenseExport implements WithEvents
 
         $vendor = $fuelLines->first()?->vendor?->company_name ?? '';
         $location = $this->expense->booking?->loading_point ?? '';
-        $client = $this->expense->booking?->client?->company_name ?? '';
 
-        $sheet->setCellValue('A1', 'NO: ' . $this->expense->id);
+        $sheet->setCellValue('A1', 'NO.' . ($this->expense->reference_no ?? $this->expense->id));
         $sheet->mergeCells('A1:D1');
         $sheet->getStyle('A1')->getFont()->setBold(true);
 
-        $title = 'MAFUTA ' . strtoupper($vendor ?: $location) . ' ' . $fuelLines->count()
-            . ' - ' . $this->expense->created_at->format('d.m.Y')
-            . ($client ? " ({$client})" : '');
+        $title = 'MAFUTA ' . strtoupper($vendor ?: $location) . ' GARI ' . $fuelLines->count()
+            . '- ' . $this->expense->created_at->format('d.m.Y');
         $sheet->setCellValue('A2', $title);
         $sheet->mergeCells('A2:D2');
         $sheet->getStyle('A2')->getFont()->setBold(true);
@@ -72,18 +69,12 @@ class FuelExpenseExport implements WithEvents
             $row++;
         }
 
-        $sheet->setCellValue('B' . $row, 'TOTAL');
         $sheet->setCellValue('D' . $row, $totalLitres);
-        $sheet->getStyle("A{$row}:D{$row}")->getFont()->setBold(true);
+        $sheet->getStyle("D{$row}")->getFont()->setBold(true);
         $row++;
 
-        $sheet->setCellValue('C' . $row, 'RATE');
-        $sheet->setCellValue('D' . $row, $rate ?? 0);
-        $row++;
-
-        $sheet->setCellValue('C' . $row, 'AMOUNTS');
-        $sheet->setCellValue('D' . $row, $totalLitres * ($rate ?? 0));
-        $sheet->getStyle("C{$row}:D{$row}")->getFont()->setBold(true);
+        $sheet->setCellValue('B' . $row, 'TOTAL');
+        $sheet->getStyle("B{$row}")->getFont()->setBold(true);
 
         foreach (['A', 'B', 'C', 'D'] as $col) {
             $sheet->getColumnDimension($col)->setWidth(20);

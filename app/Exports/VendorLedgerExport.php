@@ -44,7 +44,7 @@ class VendorLedgerExport implements WithEvents
             ->get()
             ->map(fn($line) => [
                 'date' => $line->created_at,
-                'order_no' => $line->expense_order_id,
+                'order_no' => $line->expenseOrder?->reference_no ?? $line->expense_order_id,
                 'truck' => $line->bookingTruck?->truck?->reg_no,
                 'ltr' => $line->quantity,
                 'location' => $line->description,
