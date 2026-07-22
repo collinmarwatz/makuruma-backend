@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
+    const DEFAULT_PASSWORD = 'Makuruma@2026';
+
     public function index()
     {
         return User::with('role')->get();
@@ -19,10 +21,12 @@ class UserController extends Controller
             'name' => 'required|string',
             'phone' => 'nullable|string',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8',
+            'password' => 'nullable|string|min:8',
             'role_id' => 'nullable|exists:roles,id',
             'status' => 'in:active,suspended',
         ]);
+
+        $validated['password'] = $validated['password'] ?? self::DEFAULT_PASSWORD;
 
         $user = User::create($validated);
 
@@ -60,5 +64,17 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(null, 204);
+    }
+
+    public function resetPassword(User $user)
+    {
+        if (request()->user()->role?->slug !== 'admin') {
+            return response()->json(['message' => 'You are not authorized to perform this action.'], 403);
+        }
+
+        $user->password = self::DEFAULT_PASSWORD;
+        $user->save();
+
+        return response()->json(['message' => 'Password reset successfully']);
     }
 }

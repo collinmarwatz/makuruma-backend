@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ProfileController;
 
 use App\Http\Controllers\Api\TruckController;
 use App\Http\Controllers\Api\TruckDocumentController;
@@ -49,6 +50,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('roles', [RoleController::class, 'index']);
     Route::apiResource('users', UserController::class);
+    Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword']);
+
+    Route::put('profile/password', [ProfileController::class, 'updatePassword']);
 
     Route::apiResource('trucks', TruckController::class);
     Route::get('trucks/{truck}/documents', [TruckDocumentController::class, 'index']);
